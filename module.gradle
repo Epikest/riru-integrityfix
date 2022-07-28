@@ -1,0 +1,13 @@
+ext {
+    moduleLibraryName = "integrityfix"
+    moduleMinRiruApiVersion = 25
+    moduleMinRiruVersionName = "v25.4.2"
+    moduleRiruApiVersion = 25
+    magiskModuleId = "riru-integrityfix"
+
+    moduleName = "Riru - Play Integrity Fix"
+    moduleAuthor = "HuskyDG"
+    moduleDescription = "Spoof fingerprint to pass SafetyNet / Play Integrity API"
+    moduleVersion = "v1.1"
+    moduleVersionCode = 1
+}
