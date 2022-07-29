@@ -1,10 +1,7 @@
-*.iml
-.gradle
-/local.properties
-/.idea
 .DS_Store
-/build
-/captures
-/out
-.externalNativeBuild
-.cxx
+/*.zip
+
+# VS Code Java Language Server
+.settings/
+.project
+.classpath

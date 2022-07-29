@@ -10,12 +10,25 @@
 #include <stdio.h>
 #include <cerrno>
 
+#include <cstring>
+#include <sys/mman.h>
+#include <android/log.h>
+
 #include "logging.h"
 #include "nativehelper/scoped_utf_chars.h"
 #include "android_filesystem_config.h"
 
+#ifndef NDEBUG
+#define DEBUG(...) __android_log_write(ANDROID_LOG_DEBUG, "SafetyNetRiru/JNI", __VA_ARGS__)
+#else
+#define DEBUG(...)
+#endif
+
 const char* MODDIR = nullptr;
 const char* FINGERPRINT = nullptr;
+static void *moduleDex;
+static size_t moduleDexSize;
+static bool gmsSpecializePending = false;
 
 void injectBuild(const char *package_name,const char *finger1, JNIEnv *env) {
     if (env == nullptr) {
@@ -74,11 +87,92 @@ const char* ReadConfig(){
     return config;
 }
 
+static void specializeCommon(JNIEnv *env) {
+    DEBUG("specializeCommon");
+    if (!moduleDex || !gmsSpecializePending) {
+        DEBUG("dex null or specialize not pending");
+        riru_set_unload_allowed(true);
+        return;
+    }
+
+    DEBUG("get system classloader");
+    // First, get the system classloader
+    jclass clClass = env->FindClass("java/lang/ClassLoader");
+    jmethodID getSystemClassLoader = env->GetStaticMethodID(clClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+    jobject systemClassLoader = env->CallStaticObjectMethod(clClass, getSystemClassLoader);
+
+    DEBUG("create buf");
+    // Assuming we have a valid mapped module, load it. This is similar to the approach used for
+    // Dynamite modules in GmsCompat, except we can use InMemoryDexClassLoader directly instead of
+    // tampering with DelegateLastClassLoader's DexPathList.
+    jobject buf = env->NewDirectByteBuffer(moduleDex, moduleDexSize);
+    DEBUG("construct dex cl");
+    jclass dexClClass = env->FindClass("dalvik/system/InMemoryDexClassLoader");
+    jmethodID dexClInit = env->GetMethodID(dexClClass, "<init>", "(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
+    jobject dexCl = env->NewObject(dexClClass, dexClInit, buf, systemClassLoader);
+
+    // Load the class
+    DEBUG("load class method lookup");
+    jmethodID loadClass = env->GetMethodID(clClass, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
+    DEBUG("call load class");
+    jstring entryClassName = env->NewStringUTF("dev.kdrag0n.safetynetriru.EntryPoint");
+    jobject entryClassObj = env->CallObjectMethod(dexCl, loadClass, entryClassName);
+
+    // Call init. Static initializers don't run when merely calling loadClass from JNI.
+    DEBUG("call init");
+    auto entryClass = (jclass) entryClassObj;
+    jmethodID entryInit = env->GetStaticMethodID(entryClass, "init", "()V");
+    env->CallStaticVoidMethod(entryClass, entryInit);
+    DEBUG("specializeCommon end");
+}
+
+static void *readFile(char *path, size_t *fileSize) {
+    int fd = open(path, O_RDONLY, 0);
+    if (fd < 0) {
+        DEBUG("open fail");
+        return nullptr;
+    }
+
+    // Get size
+    DEBUG("get size");
+    *fileSize = lseek(fd, 0, SEEK_END);
+    if (*fileSize < 0) {
+        DEBUG("seek fail");
+        return nullptr;
+    }
+    lseek(fd, 0, SEEK_SET);
+
+    // Map
+    /*
+    DEBUG("mmap");
+    moduleDex = mmap(nullptr, *fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (moduleDex == MAP_FAILED) {
+        DEBUG("mmap fail");
+    }*/
+
+    // Read the entire file into a buffer
+    // TODO: see if mmap path is visible in /proc/pid/maps after closing and forking
+    char *data = (char *) malloc(*fileSize);
+    int bytes = 0;
+    while (bytes < *fileSize) {
+        bytes += read(fd, data + bytes, *fileSize - bytes);
+    }
+
+    // Close the fd. This doesn't destroy the mapping.
+    DEBUG("close");
+    close(fd);
+
+    return data;
+}
+
+//
+
 static void preSpecialize(const char *process, JNIEnv *env){
     std::string package_name = process;
     // Inject marlin prop to pass Play Integrity
     if (strcmp(process,"com.google.android.gms") == 0 || strcmp(process,"com.google.android.gms.unstable") == 0) {
         injectBuild(process,FINGERPRINT, env);
+        gmsSpecializePending = true;
     }
 }
 
@@ -96,7 +190,7 @@ static void forkAndSpecializePre(
 
 static void forkAndSpecializePost(JNIEnv *env, jclass clazz, jint res) {
     if (res == 0) {
-        riru_set_unload_allowed(true);
+        specializeCommon(env);
     }
 }
 
@@ -113,11 +207,24 @@ static void specializeAppProcessPre(
 }
 
 static void specializeAppProcessPost(JNIEnv *env, jclass clazz) {
-    riru_set_unload_allowed(true);
+    specializeCommon(env);
 }
 
 void onModuleLoaded() {
-    LOGI("MODDIR is %s", MODDIR);
+    // Load
+    DEBUG("onModuleLoaded, loading file");
+    char pathBuf[128];
+    snprintf(pathBuf, 128, "%s/%s", MODDIR, "classes.dex");
+    DEBUG((char*)MODDIR);
+    DEBUG(pathBuf);
+
+    moduleDex = readFile(pathBuf, &moduleDexSize);
+    if (!moduleDex) {
+        return;
+    }
+
+    DEBUG("module loaded");
+    
     FINGERPRINT = ReadConfig();
     LOGI("Fingerprint is %s", FINGERPRINT);
 }
