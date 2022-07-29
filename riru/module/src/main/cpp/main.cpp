@@ -84,7 +84,7 @@ const char* ReadConfig(){
 static void specializeCommon(JNIEnv *env) {
     LOGI("specializeCommon");
     if (!moduleDex || !gmsSpecializePending) {
-        LOGI("dex null or specialize not pending");
+        // dex null or specialize not pending
         riru_set_unload_allowed(true);
         return;
     }
@@ -123,7 +123,7 @@ static void specializeCommon(JNIEnv *env) {
 static void *readFile(char *path, size_t *fileSize) {
     int fd = open(path, O_RDONLY, 0);
     if (fd < 0) {
-        LOGI("open fail");
+        LOGE("open fail");
         return nullptr;
     }
 
@@ -131,7 +131,7 @@ static void *readFile(char *path, size_t *fileSize) {
     LOGI("get size");
     *fileSize = lseek(fd, 0, SEEK_END);
     if (*fileSize < 0) {
-        LOGI("seek fail");
+        LOGE("seek fail");
         return nullptr;
     }
     lseek(fd, 0, SEEK_SET);
@@ -141,7 +141,7 @@ static void *readFile(char *path, size_t *fileSize) {
     LOGI("mmap");
     moduleDex = mmap(nullptr, *fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (moduleDex == MAP_FAILED) {
-        LOGI("mmap fail");
+        LOGE("mmap fail");
     }*/
 
     // Read the entire file into a buffer
