@@ -82,7 +82,6 @@ const char* ReadConfig(){
 }
 
 static void specializeCommon(JNIEnv *env) {
-    LOGI("specializeCommon");
     if (!moduleDex || !gmsSpecializePending) {
         // dex null or specialize not pending
         riru_set_unload_allowed(true);
