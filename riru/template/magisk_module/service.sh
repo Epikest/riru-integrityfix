@@ -1,5 +1,6 @@
 #!/system/bin/sh
 # Conditional MagiskHide properties
+MODDIR="${0%/*}"
 
 maybe_set_prop() {
     local prop="$1"
@@ -27,6 +28,9 @@ if [[ "$(cat /sys/fs/selinux/enforce)" == "0" ]]; then
     chmod 640 /sys/fs/selinux/enforce
     chmod 440 /sys/fs/selinux/policy
 fi
+
+rm -rf "$MODDIR/debug_log.txt"
+logcat PlayIntegrityFix:* *:S >"$MODDIR/debug_log.txt" &
 
 # Late props which must be set after boot_completed
 {
