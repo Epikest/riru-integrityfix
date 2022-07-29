@@ -15,4 +15,4 @@
 #define LOGE(...) (__android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__))
 #define PLOGE(fmt, args...) LOGE(fmt " failed with %d: %s\n", ##args, errno, strerror(errno))
 
-#define TAG "Riru"
+#define TAG "PlayIntegrityFix"
