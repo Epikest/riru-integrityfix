@@ -47,6 +47,7 @@ ui_print "- Extracting module files"
 extract "$ZIPFILE" 'module.prop' "$MODPATH"
 # extract "$ZIPFILE" 'post-fs-data.sh' "$MODPATH"
 # extract "$ZIPFILE" 'uninstall.sh' "$MODPATH"
+extract "$ZIPFILE" 'service.sh' "$MODPATH"
 extract "$ZIPFILE" 'classes.dex' "$MODPATH"
 extract "$ZIPFILE" 'fingerprint.txt' "$MODPATH"
 if [ -f "$MAGISKTMP/.magisk/modules/$MODID/fingerprint.txt" ]; then
