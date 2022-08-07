@@ -8,6 +8,6 @@ ext {
     moduleName = "Riru - Play Integrity Fix"
     moduleAuthor = "Kdrag0n, HuskyDG"
     moduleDescription = "A workarround to pass SafetyNet / Play Integrity API on rooted devices with unlocked bootloader"
-    moduleVersion = "v2.2"
-    moduleVersionCode = 4
+    moduleVersion = "v2.3"
+    moduleVersionCode = 5
 }
