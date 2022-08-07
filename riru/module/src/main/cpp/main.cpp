@@ -23,6 +23,7 @@ const char* FINGERPRINT = nullptr;
 static void *moduleDex;
 static size_t moduleDexSize;
 static bool gmsSpecializePending = false;
+static bool finger_inject = false;
 
 void injectBuild(const char *package_name,const char *finger1, JNIEnv *env) {
     if (env == nullptr) {
@@ -77,7 +78,10 @@ const char* ReadConfig(){
         fclose(fp);
     } else {
         LOGE("Failed to open config file: %s", strerror(errno));
+        return nullptr;
     }
+    LOGI("Fingerprint is %s", config);
+    finger_inject = true;
     return config;
 }
 
@@ -163,9 +167,10 @@ static void *readFile(char *path, size_t *fileSize) {
 static void preSpecialize(const char *process, JNIEnv *env){
     std::string package_name = process;
     // Inject marlin prop to pass Play Integrity
+    gmsSpecializePending = false;
     if (strcmp(process,"com.google.android.gms.unstable") == 0) {
         LOGI("Process is Safetynet");
-        injectBuild(process,FINGERPRINT, env);
+        if (finger_inject) injectBuild(process,FINGERPRINT, env);
         gmsSpecializePending = true;
     }
 }
@@ -217,9 +222,7 @@ void onModuleLoaded() {
     }
 
     LOGI("module loaded");
-    
     FINGERPRINT = ReadConfig();
-    LOGI("Fingerprint is %s", FINGERPRINT);
 }
 
 
