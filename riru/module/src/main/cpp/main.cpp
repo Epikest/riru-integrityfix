@@ -17,9 +17,11 @@
 #include "logging.h"
 #include "nativehelper/scoped_utf_chars.h"
 #include "android_filesystem_config.h"
+#include <sys/system_properties.h>
 
 const char* MODDIR = nullptr;
 const char* FINGERPRINT = nullptr;
+char* FINGERPRINT_ORIG = new char [1024];
 static void *moduleDex;
 static size_t moduleDexSize;
 static bool gmsSpecializePending = false;
@@ -172,6 +174,9 @@ static void preSpecialize(const char *process, JNIEnv *env){
         LOGI("Process is Safetynet");
         if (finger_inject) injectBuild(process,FINGERPRINT, env);
         gmsSpecializePending = true;
+    } else {
+        injectBuild(process,FINGERPRINT_ORIG, env);
+        gmsSpecializePending = false;
     }
 }
 
@@ -223,6 +228,8 @@ void onModuleLoaded() {
 
     LOGI("module loaded");
     FINGERPRINT = ReadConfig();
+    __system_property_get("ro.build.fingerprint", FINGERPRINT_ORIG);
+    LOGI("Original fingerprint is %s", FINGERPRINT_ORIG);
 }
 
 
