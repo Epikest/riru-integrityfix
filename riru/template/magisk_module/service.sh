@@ -29,8 +29,9 @@ if [[ "$(cat /sys/fs/selinux/enforce)" == "0" ]]; then
     chmod 440 /sys/fs/selinux/policy
 fi
 
-rm -rf "$MODDIR/debug_log.txt"
-logcat PlayIntegrityFix:* *:S >"$MODDIR/debug_log.txt" &
+if [ -f "$MODDIR/debug_log.txt" ]; then
+    logcat PlayIntegrityFix:* *:S >"$MODDIR/debug_log.txt" &
+fi
 
 # Late props which must be set after boot_completed
 {
