@@ -20,6 +20,7 @@ maybe_set_prop vendor.boot.mode recovery unknown
 # MIUI cross-region flash
 maybe_set_prop ro.boot.hwc CN GLOBAL
 maybe_set_prop ro.boot.hwcountry China GLOBAL
+maybe_set_prop sys.oem_unlock_allowed 1 0
 
 resetprop --delete ro.build.selinux
 
@@ -53,8 +54,15 @@ fi
     resetprop ro.is_ever_orange 0
 
     # Safetynet
-     resetprop ro.boot.verifiedbootstate green
-     resetprop ro.boot.veritymode enforcing
-     resetprop vendor.boot.vbmeta.device_state locked
+    resetprop ro.boot.verifiedbootstate green
+    resetprop ro.boot.veritymode enforcing
+    resetprop vendor.boot.vbmeta.device_state locked
 
+    # do unmount in Google Play Services
+    while true; do
+        sleep 10
+        for i in 99999 $(pidof com.google.android.gms) $(pidof com.google.android.gms.unstable); do
+            magisk magiskhide --do-unmount "$i"
+        done
+    done
 }&
