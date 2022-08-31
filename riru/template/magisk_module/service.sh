@@ -60,7 +60,7 @@ fi
 
     # do unmount in Google Play Services
     while true; do
-        sleep 10
+        sleep 3
         for i in 99999 $(pidof com.google.android.gms) $(pidof com.google.android.gms.unstable); do
             magisk magiskhide --do-unmount "$i"
         done
